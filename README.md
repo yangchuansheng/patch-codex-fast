@@ -98,10 +98,11 @@ The patch uses `npx @electron/asar` and `npx @electron/fuses`. `npx` may downloa
 
 ```text
 .
-├── SKILL.md                 # The Codex skill entrypoint
+├── SKILL.md                 # Root skill entrypoint for npx skills
 ├── README.md                # Skill-first usage and reference
 ├── LICENSE
 ├── SECURITY.md
+├── skills/patch-codex-fast/ # Mirrored skill entrypoint for skills.sh detail pages
 ├── scripts/                 # Skill implementation assets
 │   ├── patch_codex_fast.py  # Cross-platform CLI
 │   ├── codex_fast_patch/    # Python modules
@@ -115,7 +116,7 @@ The patch uses `npx @electron/asar` and `npx @electron/fuses`. `npx` may downloa
 
 ## skills.sh listing
 
-This repository is compatible with `npx skills` because the skill entrypoint is the root `SKILL.md`. It can be installed directly from GitHub:
+This repository is compatible with `npx skills` because it keeps a root `SKILL.md` for CLI discovery and mirrors the same entrypoint at `skills/patch-codex-fast/SKILL.md` for skills.sh detail-page rendering. It can be installed directly from GitHub:
 
 ```bash
 npx skills add yangchuansheng/patch-codex-fast -g -a codex -y
