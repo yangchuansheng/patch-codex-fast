@@ -122,7 +122,7 @@ This repository is compatible with `npx skills` because it keeps a root `SKILL.m
 npx skills add yangchuansheng/patch-codex-fast -g -a codex -y
 ```
 
-The skills.sh page is expected at <https://skills.sh/yangchuansheng/patch-codex-fast>. If the page does not appear immediately, verify installation with the CLI and allow time for directory indexing or usage statistics to update.
+The skills.sh page is expected at <https://skills.sh/yangchuansheng/patch-codex-fast/patch-codex-fast>. If the page or its SKILL.md preview does not update immediately, verify installation with the CLI and allow time for directory indexing or usage statistics to update.
 
 ## Direct script usage
 
