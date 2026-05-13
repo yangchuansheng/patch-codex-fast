@@ -1,5 +1,7 @@
 # patch-codex-fast
 
+[![skills.sh](https://skills.sh/b/yangchuansheng/patch-codex-fast)](https://skills.sh/yangchuansheng/patch-codex-fast)
+
 A Codex skill that patches the local Codex desktop app so **Fast/Speed mode** and **Plugins** are available when Codex is signed in with an **API key** instead of ChatGPT OAuth.
 
 The main artifact is the skill. You install this repository as a Codex skill, then ask Codex to run `patch-codex-fast`. Codex should handle the doctor check, patch execution, verification, and rollback guidance for you.
@@ -22,23 +24,30 @@ You do not need to copy the long patch commands manually. The scripts under `scr
 
 ## Install as a Codex skill
 
-Clone the repository:
+Recommended install through `npx skills`:
+
+```bash
+npx skills add yangchuansheng/patch-codex-fast -g -a codex -y
+```
+
+This installs the repository as a global Codex skill. You can inspect the available skill before installing:
+
+```bash
+npx skills add yangchuansheng/patch-codex-fast --list
+```
+
+For the interactive cross-agent installer, run:
+
+```bash
+npx skills add yangchuansheng/patch-codex-fast
+```
+
+Manual install is still possible if you do not want to use `npx skills`:
 
 ```bash
 git clone https://github.com/yangchuansheng/patch-codex-fast.git
-```
-
-Install it into your Codex skills directory:
-
-```bash
 mkdir -p ~/.codex/skills
 ln -s "$(pwd)/patch-codex-fast" ~/.codex/skills/patch-codex-fast
-```
-
-If you cloned it somewhere else, use that absolute path instead:
-
-```bash
-ln -s "/absolute/path/to/patch-codex-fast" ~/.codex/skills/patch-codex-fast
 ```
 
 Confirm the skill file exists:
@@ -103,6 +112,16 @@ The patch uses `npx @electron/asar` and `npx @electron/fuses`. `npx` may downloa
 └── tests/
     └── test_patch_logic.py
 ```
+
+## skills.sh listing
+
+This repository is compatible with `npx skills` because the skill entrypoint is the root `SKILL.md`. It can be installed directly from GitHub:
+
+```bash
+npx skills add yangchuansheng/patch-codex-fast -g -a codex -y
+```
+
+The skills.sh page is expected at <https://skills.sh/yangchuansheng/patch-codex-fast>. If the page does not appear immediately, verify installation with the CLI and allow time for directory indexing or usage statistics to update.
 
 ## Direct script usage
 

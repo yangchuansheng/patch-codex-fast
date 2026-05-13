@@ -7,7 +7,7 @@ description: Patch Codex App to enable Fast/Speed mode and Plugins when using AP
 
 Use this skill when the user wants to enable Codex desktop Fast/Speed mode or Plugins while running Codex with an API key instead of ChatGPT OAuth login.
 
-This skill is the main interface. Do not make the user copy long shell snippets from the README. Use the scripts in this repository as execution assets, run the right command for the current OS, then report the result and verification steps.
+This skill is the main interface after installation through `npx skills` or a manual symlink. Do not make the user copy long shell snippets from the README. Use the scripts in this repository as execution assets, run the right command for the current OS, then report the result and verification steps.
 
 This is an unofficial local patch. Before changing the app, make sure the user understands that it modifies the installed Codex desktop bundle, disables selected Electron integrity fuses, and may need to be re-applied after Codex updates.
 
@@ -19,7 +19,7 @@ The user should be able to say:
 [$patch-codex-fast] Patch my local Codex app so Fast mode and Plugins work in API key mode.
 ```
 
-Then the agent should execute the workflow end to end, not respond with a manual recipe.
+Then the agent should execute the workflow end to end, not respond with a manual recipe. The script commands below are for the agent to run, not for the user to copy as the primary path.
 
 ## Workflow
 
