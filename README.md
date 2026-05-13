@@ -1,10 +1,10 @@
 # patch-codex-fast
 
-[![skills.sh](https://skills.sh/b/yangchuansheng/patch-codex-fast)](https://skills.sh/yangchuansheng/patch-codex-fast)
+[![skills.sh](https://skills.sh/b/yangchuansheng/patch-codex-fast)](https://skills.sh/yangchuansheng/patch-codex-fast/patch-codex-fast)
 
 A Codex skill that patches the local Codex desktop app so **Fast/Speed mode** and **Plugins** are available when Codex is signed in with an **API key** instead of ChatGPT OAuth.
 
-The main artifact is the skill. You install this repository as a Codex skill, then ask Codex to run `patch-codex-fast`. Codex should handle the doctor check, patch execution, verification, and rollback guidance for you.
+The main artifact is the installable skill package at `skills/patch-codex-fast/SKILL.md`. Install the repository through `npx skills`, then ask Codex to run `patch-codex-fast`. Codex should handle the doctor check, patch execution, verification, and rollback guidance for you.
 
 > [!WARNING]
 > This is an unofficial local patch. It modifies your installed Codex desktop app and disables selected Electron integrity fuses so the unpacked app can load. Use it only on machines where you accept that tradeoff.
@@ -20,7 +20,7 @@ When invoked, the skill guides Codex to:
 5. Ask you to verify Fast/Speed mode and Plugins in API key mode.
 6. Roll back immediately if Codex fails to launch.
 
-You do not need to copy the long patch commands manually. The scripts under `scripts/` are implementation assets used by the skill.
+You do not need to copy long patch commands manually. The scripts under the skill package are execution assets used by the skill.
 
 ## Install as a Codex skill
 
@@ -30,7 +30,7 @@ Recommended install through `npx skills`:
 npx skills add yangchuansheng/patch-codex-fast -g -a codex -y
 ```
 
-This installs the repository as a global Codex skill. You can inspect the available skill before installing:
+This installs `skills/patch-codex-fast/` as a global Codex skill. You can inspect the available skill before installing:
 
 ```bash
 npx skills add yangchuansheng/patch-codex-fast --list
@@ -42,12 +42,18 @@ For the interactive cross-agent installer, run:
 npx skills add yangchuansheng/patch-codex-fast
 ```
 
+If you want to install the skill package path explicitly, use the GitHub tree URL:
+
+```bash
+npx skills add https://github.com/yangchuansheng/patch-codex-fast/tree/main/skills/patch-codex-fast -g -a codex -y
+```
+
 Manual install is still possible if you do not want to use `npx skills`:
 
 ```bash
 git clone https://github.com/yangchuansheng/patch-codex-fast.git
 mkdir -p ~/.codex/skills
-ln -s "$(pwd)/patch-codex-fast" ~/.codex/skills/patch-codex-fast
+ln -s "$(pwd)/patch-codex-fast/skills/patch-codex-fast" ~/.codex/skills/patch-codex-fast
 ```
 
 Confirm the skill file exists:
@@ -98,13 +104,12 @@ The patch uses `npx @electron/asar` and `npx @electron/fuses`. `npx` may downloa
 
 ```text
 .
-├── SKILL.md                 # Root skill entrypoint for npx skills
-├── README.md                # Skill-first usage and reference
+├── README.md
 ├── LICENSE
 ├── SECURITY.md
-├── skills/patch-codex-fast/ # Mirrored installable skill for skills.sh detail pages
-│   ├── SKILL.md
-│   ├── scripts/             # Copied execution assets used when installed from this subpath
+├── skills/patch-codex-fast/ # Canonical installable skill package
+│   ├── SKILL.md             # Skill entrypoint used by npx skills and skills.sh
+│   ├── scripts/             # Execution assets copied when the skill is installed
 │   ├── README.md
 │   ├── LICENSE
 │   └── SECURITY.md
@@ -116,18 +121,26 @@ The patch uses `npx @electron/asar` and `npx @electron/fuses`. `npx` may downloa
 │   ├── windows-patch.ps1
 │   └── windows-rollback.ps1
 └── tests/
+    ├── test_packaging.py
     └── test_patch_logic.py
 ```
 
-## skills.sh listing
+## skills.sh compatibility
 
-This repository is compatible with `npx skills` because it keeps a root `SKILL.md` for CLI discovery and mirrors the full installable skill at `skills/patch-codex-fast/` for skills.sh detail-page rendering. It can be installed directly from GitHub:
+This repository uses the conventional `skills/<slug>/SKILL.md` layout expected by the skills ecosystem:
 
-```bash
-npx skills add yangchuansheng/patch-codex-fast -g -a codex -y
+```text
+skills/patch-codex-fast/SKILL.md
 ```
 
-The skills.sh page is expected at <https://skills.sh/yangchuansheng/patch-codex-fast/patch-codex-fast>. If the page or its SKILL.md preview does not update immediately, verify installation with the CLI and allow time for directory indexing or usage statistics to update.
+There is intentionally no root-level `SKILL.md`. The `npx skills` CLI checks a root `SKILL.md` first and returns it by default when present; keeping only the canonical `skills/patch-codex-fast/` package prevents the root entry from shadowing the package path that skills.sh uses for the detail page and download snapshot.
+
+The skills.sh page is expected at <https://skills.sh/yangchuansheng/patch-codex-fast/patch-codex-fast>. If the SKILL.md preview lags after a push, verify the GitHub source and CLI install first:
+
+```bash
+npx skills add yangchuansheng/patch-codex-fast --list
+npx skills add yangchuansheng/patch-codex-fast -g -a codex --skill patch-codex-fast -y --copy
+```
 
 ## Direct script usage
 
@@ -244,34 +257,16 @@ if (Test-Path app.asar.bak) { Copy-Item app.asar.bak app.asar }
 
 ### Skill is not detected
 
-Confirm that Codex can read the root skill file:
+Confirm that Codex can read the installed skill package:
 
 ```bash
 ls ~/.codex/skills/patch-codex-fast/SKILL.md
 ```
 
-The skill entrypoint is the repository root `SKILL.md`, not a nested file.
+For repository installs, the canonical source file is `skills/patch-codex-fast/SKILL.md`.
 
 ### Patch reports `No patches were applied`
 
 The installed Codex version likely changed the bundle patterns. Ask Codex to use this skill to inspect the extracted assets and update the target patterns.
 
 Do not paste API keys, cookies, tokens, or proprietary bundle chunks into public issues.
-
-### Codex does not launch after patching
-
-Ask the skill to roll back immediately:
-
-```text
-[$patch-codex-fast] Roll back now. Codex does not launch after the patch.
-```
-
-On macOS, also verify that the `codesign` step completed.
-
-## Security note
-
-This repository is for local experimentation and workflow recovery. It is not affiliated with OpenAI or the Codex desktop app. Review the scripts before running them and keep rollback available.
-
-## License
-
-MIT. See `LICENSE`.
