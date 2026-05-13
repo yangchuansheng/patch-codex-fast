@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .app import AppPaths
+from .chrome import patch_chrome_plugin_preservation
 from .patterns import (
     APIKEY_GATE_PATTERNS,
     CONNECTOR_PATTERNS,
@@ -14,6 +15,9 @@ from .patterns import (
     FAST_HOOK_AUTH_PATTERNS,
     FAST_MODELS_PATTERNS,
 )
+
+
+SIDEBAR_GATE_RE = re.compile(r"([A-Z])\?\(0,\$\.jsx\)\(Sl,\{tooltipContent")
 
 
 @dataclass
@@ -124,7 +128,7 @@ def patch_plugin_sidebar(paths: AppPaths, report: PatchReport) -> None:
         if marker in content:
             idx = content.find(marker)
             window = content[max(0, idx - 240) : idx + 120]
-            match = re.search(r"([A-Z])\?\(0,\$\.jsx\)\(Sl,\{tooltipContent", window)
+            match = SIDEBAR_GATE_RE.search(window)
             if match:
                 content = replace_sidebar_gate(path, content, match.group(1), report)
             else:
@@ -194,6 +198,7 @@ def patch_js(paths: AppPaths) -> PatchReport:
     patch_plugin_sidebar(paths, report)
     patch_apikey_gate(paths, report)
     patch_connector_gate(paths, report)
+    patch_chrome_plugin_preservation(paths, report)
 
     if report.patch_actions == 0:
         raise SystemExit(

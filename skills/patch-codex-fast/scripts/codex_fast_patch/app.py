@@ -39,6 +39,10 @@ class AppPaths:
     def assets_dir(self) -> Path:
         return self.extracted_app_dir / "webview" / "assets"
 
+    @property
+    def plugins_dir(self) -> Path:
+        return self.resources_dir / "plugins"
+
 
 def detect_paths(resources_dir: str | None, fuse_app_path: str | None) -> AppPaths:
     """Resolve default Codex paths for macOS or Windows."""
@@ -146,6 +150,8 @@ def print_doctor(paths: AppPaths) -> None:
     print(f"app.asar1: {'yes' if paths.renamed_asar_path.exists() else 'no'}")
     print(f"app.asar.bak: {'yes' if paths.backup_asar_path.exists() else 'no'}")
     print(f"extracted app/: {'yes' if paths.extracted_app_dir.exists() else 'no'}")
+    print(f"plugins/: {'yes' if paths.plugins_dir.exists() else 'no'}")
+    print(f"openai-bundled marketplace: {'yes' if (paths.plugins_dir / 'openai-bundled').exists() else 'no'}")
     python_tool = shutil.which("python3") or shutil.which("python")
     for tool in ("npx", "codesign"):
         if tool == "codesign" and platform.system() != "Darwin":

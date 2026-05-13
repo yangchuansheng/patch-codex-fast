@@ -30,10 +30,11 @@ Then the agent should execute the workflow end to end, not respond with a manual
    - whether patch actions were applied,
    - any warnings,
    - the exact rollback command.
-5. Ask the user to open Codex and verify:
+5. Ask the user to completely quit and reopen Codex, then verify:
    - Fast/Speed mode is visible in API key mode,
    - the Plugins sidebar is visible in API key mode,
-   - plugin install flow no longer marks all connectors unavailable.
+   - plugin install flow no longer marks all connectors unavailable,
+   - Computer Use settings still show the Google Chrome plugin row.
 6. If Codex fails to launch or the user reports a broken state, run rollback immediately.
 
 ## Commands
@@ -105,8 +106,16 @@ grep -rl 'return e===.apikey.' *.js | grep -v locale
 grep -rl "connector-unavailable" *.js | grep plugin
 ```
 
-Patch the same logical gates described in the README if automated patterns no longer match.
+Patch the same logical gates described in the README if automated patterns no longer match. Also preserve Chrome by checking these app-bundle surfaces:
+
+```bash
+grep -rl "chrome-internal" app/.vite/build
+grep -rl "externalBrowserUseAllowed" app/.vite/build
+grep -rl "isExternalBrowserUseAvailable" app/webview/assets
+```
+
+The current fix maps the Dev runtime Chrome plugin name from `chrome-internal` to `chrome`, keeps the Chrome marketplace descriptor from being dropped by the external-browser feature gate, and prevents the renderer plugin list from hiding Chrome when `isExternalBrowserUseAvailable` is false.
 
 ## Success criteria
 
-The task is not complete until the agent has command evidence for the patch or rollback path and has told the user exactly what to verify in the Codex UI.
+The task is not complete until the agent has command evidence for the patch or rollback path and has told the user exactly what to verify in the Codex UI, including the Google Chrome row under Computer Use.

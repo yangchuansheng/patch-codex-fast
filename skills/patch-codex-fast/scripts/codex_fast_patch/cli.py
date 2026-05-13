@@ -37,7 +37,7 @@ def patch_app(args: argparse.Namespace) -> None:
         print("Warnings:")
         for warning in report.warnings:
             print(f"  - {warning}")
-    print("Open Codex and verify Fast mode plus the Plugins sidebar in API key mode.")
+    print("Completely quit and reopen Codex, then verify Fast mode, Plugins, and the Google Chrome row in Computer Use.")
 
 
 def rollback_app(args: argparse.Namespace) -> None:

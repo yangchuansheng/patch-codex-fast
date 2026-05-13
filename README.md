@@ -17,7 +17,7 @@ When invoked, the skill guides Codex to:
 2. Back up the original `app.asar`.
 3. Extract and patch the local Codex desktop bundle.
 4. Re-sign the app on macOS.
-5. Ask you to verify Fast/Speed mode and Plugins in API key mode.
+5. Ask you to verify Fast/Speed mode, Plugins, and the Google Chrome row under Computer Use in API key mode.
 6. Roll back immediately if Codex fails to launch.
 
 You do not need to copy long patch commands manually. The scripts under the skill package are execution assets used by the skill.
@@ -85,7 +85,7 @@ The skill is designed for this workflow:
 1. Run `doctor` to inspect environment and app paths.
 2. Run `patch` for the current OS.
 3. Report the patch result and any warnings.
-4. Ask you to open Codex and verify the UI.
+4. Ask you to completely quit and reopen Codex, then verify the UI including Google Chrome under Computer Use.
 5. Run `rollback` if launch or verification fails.
 
 Because this modifies an installed desktop application, Codex may warn before executing commands that stop Codex or write under the app installation directory.
@@ -268,5 +268,15 @@ For repository installs, the canonical source file is `skills/patch-codex-fast/S
 ### Patch reports `No patches were applied`
 
 The installed Codex version likely changed the bundle patterns. Ask Codex to use this skill to inspect the extracted assets and update the target patterns.
+
+If the Plugins UI is visible but the Computer Use Google Chrome row disappears after a restart, inspect these bundle surfaces:
+
+```bash
+grep -rl "chrome-internal" app/.vite/build
+grep -rl "externalBrowserUseAllowed" app/.vite/build
+grep -rl "isExternalBrowserUseAvailable" app/webview/assets
+```
+
+The current Chrome preservation patch maps the Dev runtime Chrome plugin name from `chrome-internal` to `chrome`, keeps the Chrome marketplace descriptor from being dropped by the external-browser feature gate, and prevents the renderer plugin list from hiding Chrome when `isExternalBrowserUseAvailable` is false.
 
 Do not paste API keys, cookies, tokens, or proprietary bundle chunks into public issues.

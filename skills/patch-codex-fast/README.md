@@ -52,5 +52,6 @@ The task is complete only when the agent has command evidence for the patch or r
 - Fast/Speed mode is visible in API key mode.
 - The Plugins sidebar is visible in API key mode.
 - Plugin install flow no longer marks every connector unavailable.
+- Computer Use settings still show the Google Chrome plugin row after Codex restarts.
 
 See the repository README for the full implementation notes and troubleshooting guide: <https://github.com/yangchuansheng/patch-codex-fast>.
