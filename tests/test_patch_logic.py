@@ -53,6 +53,74 @@ class PatchLogicTest(unittest.TestCase):
             self.assertIn("function e(e){return false}", (assets / "gradient-a.js").read_text())
             self.assertIn("false&&(i=`connector-unavailable`)", (assets / "use-plugin-install-flow-a.js").read_text())
 
+
+    def test_patches_chatgpt_variant_of_apikey_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = Path(raw_tmp)
+            paths = self.make_paths(tmp)
+            assets = paths.assets_dir
+
+            (assets / "permissions-mode-helpers-a.js").write_text(
+                "return!(r?.authMethod!==`chatgpt`||i?.requirements?.featureRequirements?.fast_mode===!1);"
+                "if(i?.authMethod!==`chatgpt`||s){canUseFastMode:false}"
+                "u?.models.some(M)??!1",
+                encoding="utf-8",
+            )
+            (assets / "index-a.js").write_text(
+                "const x=D?(0,$.jsx)(Sl,{tooltipContent:(0,$.jsx)(Y,{id:`sidebarElectron.pluginsDisabledTooltip`})});",
+                encoding="utf-8",
+            )
+            (assets / "gradient-a.js").write_text(
+                "function e(e){return e!==`chatgpt`}",
+                encoding="utf-8",
+            )
+            (assets / "use-plugin-install-flow-a.js").write_text(
+                "if(a){(i=`connector-unavailable`)}",
+                encoding="utf-8",
+            )
+
+            report = patch_js(paths)
+
+            self.assertEqual(report.patch_actions, 6)
+            self.assertIn(
+                "function e(e){return false}",
+                (assets / "gradient-a.js").read_text(),
+            )
+
+    def test_patches_apikey_gate_with_regex_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = Path(raw_tmp)
+            paths = self.make_paths(tmp)
+            assets = paths.assets_dir
+
+            (assets / "permissions-mode-helpers-a.js").write_text(
+                "return!(r?.authMethod!==`chatgpt`||i?.requirements?.featureRequirements?.fast_mode===!1);"
+                "if(i?.authMethod!==`chatgpt`||s){canUseFastMode:false}"
+                "u?.models.some(M)??!1",
+                encoding="utf-8",
+            )
+            (assets / "index-a.js").write_text(
+                "const x=D?(0,$.jsx)(Sl,{tooltipContent:(0,$.jsx)(Y,{id:`sidebarElectron.pluginsDisabledTooltip`})});",
+                encoding="utf-8",
+            )
+            # Identifier renamed by the minifier; only the regex fallback can match it.
+            (assets / "gradient-a.js").write_text(
+                "function q(q){return q!==`chatgpt`}",
+                encoding="utf-8",
+            )
+            (assets / "use-plugin-install-flow-a.js").write_text(
+                "if(a){(i=`connector-unavailable`)}",
+                encoding="utf-8",
+            )
+
+            report = patch_js(paths)
+
+            self.assertEqual(report.patch_actions, 6)
+            self.assertIn(
+                "function q(q){return false}",
+                (assets / "gradient-a.js").read_text(),
+            )
+
     def test_raises_when_no_patterns_match(self) -> None:
         with tempfile.TemporaryDirectory() as raw_tmp:
             tmp = Path(raw_tmp)

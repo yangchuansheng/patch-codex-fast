@@ -218,7 +218,11 @@ Codex updates can change bundle hashes and minified variable names. Re-run the s
 ```bash
 grep -rl "authMethod" *.js | xargs grep -l "fast_mode"
 grep -rl "pluginsDisabledTooltip" *.js
-grep -rl 'return e===.apikey.' *.js | grep -v locale
+# Gate exported from gradient-*.js. Two known variants live in the wild:
+#   older builds: function e(e){return e===`apikey`}
+#   newer builds: function e(e){return e!==`chatgpt`}
+# Both should be rewritten to `return false`.
+grep -rlE 'return [A-Za-z_$]+(===|!==)`(apikey|chatgpt)`' *.js | grep -v locale
 grep -rl "connector-unavailable" *.js | grep plugin
 ```
 

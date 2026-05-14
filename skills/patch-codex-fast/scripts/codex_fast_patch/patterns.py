@@ -23,8 +23,19 @@ FAST_MODELS_PATTERNS = (
     ("u?.models.some(M)??false", "true"),
 )
 
+# The gate function exported from gradient-*.js tells the rest of the bundle
+# "is the current user NOT signed in via ChatGPT?". When it returns true the
+# renderer disables the Plugins sidebar entry, hides the Plugins label, and
+# greys out other ChatGPT-only surfaces. Neutralising it to a constant `false`
+# makes the app treat API-key users as if they were signed in with ChatGPT
+# for UI-gating purposes only.
+#
+# Known variants across Codex releases:
+#   - `return e===`apikey``  (older builds; gate based on apikey)
+#   - `return e!==`chatgpt``  (current builds; gate based on not-chatgpt)
 APIKEY_GATE_PATTERNS = (
     "function e(e){return e===`apikey`}",
+    "function e(e){return e!==`chatgpt`}",
 )
 
 CONNECTOR_PATTERNS = (
