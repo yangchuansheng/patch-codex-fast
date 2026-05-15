@@ -19,6 +19,13 @@ from .patterns import (
 
 SIDEBAR_GATE_RE = re.compile(r"([A-Z])\?\(0,\$\.jsx\)\(Sl,\{tooltipContent")
 
+# Fallback regex for the gradient-*.js gate. Matches either the old
+# "API key" phrasing or the current "not chatgpt" phrasing, regardless of
+# what identifier names the minifier has picked.
+APIKEY_GATE_FALLBACK_RE = re.compile(
+    r"function\s+([A-Za-z_$])\(\1\)\{return\s+\1(?:===|!==)`(?:apikey|chatgpt)`\}"
+)
+
 
 @dataclass
 class PatchReport:
@@ -160,15 +167,25 @@ def patch_apikey_gate(paths: AppPaths, report: PatchReport) -> None:
                 report.add_patch(f"{path.name}: apikey gate -> return false")
                 break
         else:
-            if "apikey" in content:
-                report.warn(f"{path.name}: apikey references found but known gate pattern changed")
+            match = APIKEY_GATE_FALLBACK_RE.search(content)
+            if match:
+                ident = match.group(1)
+                replacement = f"function {ident}({ident}){{return false}}"
+                content = content[: match.start()] + replacement + content[match.end() :]
+                report.add_patch(
+                    f"{path.name}: apikey gate (regex fallback) -> return false"
+                )
+            elif "apikey" in content or "chatgpt" in content:
+                report.warn(
+                    f"{path.name}: known gate patterns not found; inspect manually"
+                )
 
         if content != original:
             write_text(path, content)
             report.add_file()
 
     if not files:
-        report.warn("gradient-*.js not found; search for return e===`apikey` manually")
+        report.warn("gradient-*.js not found; search for return e===`apikey` or return e!==`chatgpt` manually")
 
 
 def patch_connector_gate(paths: AppPaths, report: PatchReport) -> None:
