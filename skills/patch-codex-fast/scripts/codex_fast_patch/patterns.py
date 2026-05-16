@@ -7,6 +7,13 @@ FUSE_FLAGS = (
     "EnableCookieEncryption=off",
 )
 
+STOCK_FUSE_FLAGS = (
+    "OnlyLoadAppFromAsar=on",
+    "EnableEmbeddedAsarIntegrityValidation=on",
+    "EnableCookieEncryption=on",
+    "GrantFileProtocolExtraPrivileges=off",
+)
+
 FAST_AUTH_PATTERNS = (
     "return!(r?.authMethod!==`chatgpt`||i?.requirements?.featureRequirements?.fast_mode===!1)",
     "return!(r?.authMethod!==`chatgpt`||a)",

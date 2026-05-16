@@ -22,14 +22,20 @@ Preferred Python entrypoint:
 ```bash
 python3 scripts/patch_codex_fast.py doctor
 python3 scripts/patch_codex_fast.py patch
+python3 scripts/patch_codex_fast.py patch-zed-remote
+python3 scripts/patch_codex_fast.py zed-remote-status
 python3 scripts/patch_codex_fast.py rollback
 ```
+
+Rollback restores `app.asar` before deleting the extracted `app/` directory, then restores stock Electron fuses and re-signs on macOS. If macOS blocks bundle writes, keep `app/` in place until `app.asar` has been restored.
 
 Windows fallback:
 
 ```powershell
 python .\scripts\patch_codex_fast.py doctor
 python .\scripts\patch_codex_fast.py patch
+python .\scripts\patch_codex_fast.py patch-zed-remote
+python .\scripts\patch_codex_fast.py zed-remote-status
 python .\scripts\patch_codex_fast.py rollback
 ```
 
@@ -53,5 +59,7 @@ The task is complete only when the agent has command evidence for the patch or r
 - The Plugins sidebar is visible in API key mode.
 - Plugin install flow no longer marks every connector unavailable.
 - Computer Use settings still show the Google Chrome plugin row after Codex restarts.
+
+For the optional Zed remote-open patch, the task is complete only when the agent has command evidence that `patch-zed-remote` ran or rolled back, and has told the user to verify that a remote Codex file shows Zed under Open With and opens in Zed Remote Development.
 
 See the repository README for the full implementation notes and troubleshooting guide: <https://github.com/yangchuansheng/patch-codex-fast>.

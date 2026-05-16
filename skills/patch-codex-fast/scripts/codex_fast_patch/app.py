@@ -9,7 +9,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .patterns import FUSE_FLAGS
+from .patterns import FUSE_FLAGS, STOCK_FUSE_FLAGS
 
 
 @dataclass
@@ -99,22 +99,31 @@ def backup_asar(paths: AppPaths) -> None:
     if paths.backup_asar_path.exists():
         print(f"[OK] Backup already exists: {paths.backup_asar_path}")
         return
-    if not paths.asar_path.exists():
-        raise SystemExit(f"Cannot create backup because app.asar is missing: {paths.asar_path}")
-    shutil.copy2(paths.asar_path, paths.backup_asar_path)
+    backup_source = paths.asar_path if paths.asar_path.exists() else paths.renamed_asar_path
+    if not backup_source.exists():
+        raise SystemExit(
+            "Cannot create backup because neither app.asar nor app.asar1 exists: "
+            f"{paths.resources_dir}"
+        )
+    shutil.copy2(backup_source, paths.backup_asar_path)
     print(f"[OK] Backed up app.asar -> {paths.backup_asar_path}")
 
 
 def prepare_extracted_app(paths: AppPaths) -> None:
-    if paths.extracted_app_dir.exists():
-        shutil.rmtree(paths.extracted_app_dir)
-        print(f"[OK] Removed previous extracted app directory: {paths.extracted_app_dir}")
+    work_dir = paths.resources_dir / "app.patch-work"
+    if work_dir.exists():
+        shutil.rmtree(work_dir)
+        print(f"[OK] Removed previous patch work directory: {work_dir}")
     if not paths.asar_path.exists() and paths.renamed_asar_path.exists():
         shutil.copy2(paths.renamed_asar_path, paths.asar_path)
         print("[OK] Restored app.asar from app.asar1 for re-patching")
 
-    run(["npx", "@electron/asar", "e", str(paths.asar_path), "app"], cwd=paths.resources_dir)
-    paths.asar_path.rename(paths.renamed_asar_path)
+    run(["npx", "@electron/asar", "e", str(paths.asar_path), work_dir.name], cwd=paths.resources_dir)
+    if paths.extracted_app_dir.exists():
+        shutil.rmtree(paths.extracted_app_dir)
+        print(f"[OK] Removed previous extracted app directory: {paths.extracted_app_dir}")
+    work_dir.rename(paths.extracted_app_dir)
+    paths.asar_path.replace(paths.renamed_asar_path)
     print("[OK] Renamed app.asar -> app.asar1 so Electron can load app/")
 
 
@@ -123,23 +132,60 @@ def disable_fuses(paths: AppPaths) -> None:
         run(["npx", "@electron/fuses", "write", "--app", str(paths.fuse_app_path), flag])
 
 
+def restore_stock_fuses(paths: AppPaths) -> None:
+    for flag in STOCK_FUSE_FLAGS:
+        run(["npx", "@electron/fuses", "write", "--app", str(paths.fuse_app_path), flag])
+
+
 def resign_if_needed(paths: AppPaths) -> None:
     if platform.system() == "Darwin":
         run(["codesign", "--force", "--deep", "--sign", "-", str(paths.fuse_app_path)])
 
 
+def restore_asar(paths: AppPaths) -> None:
+    """Restore app.asar before deleting app/ so rollback cannot leave Codex unlaunchable."""
+
+    if paths.backup_asar_path.exists():
+        try:
+            shutil.copy2(paths.backup_asar_path, paths.asar_path)
+        except PermissionError as exc:
+            raise SystemExit(build_restore_permission_error(paths, exc)) from exc
+        print("[OK] Restored app.asar from app.asar.bak")
+        return
+
+    if paths.renamed_asar_path.exists():
+        try:
+            shutil.copy2(paths.renamed_asar_path, paths.asar_path)
+        except PermissionError as exc:
+            raise SystemExit(build_restore_permission_error(paths, exc)) from exc
+        print("[OK] Restored app.asar from app.asar1")
+        return
+
+    if paths.asar_path.exists():
+        print(f"[OK] app.asar already exists: {paths.asar_path}")
+        return
+
+    raise SystemExit(
+        "Cannot rollback safely: app.asar is missing and no app.asar.bak/app.asar1 backup was found. "
+        f"Resources: {paths.resources_dir}"
+    )
+
+
+def build_restore_permission_error(paths: AppPaths, exc: PermissionError) -> str:
+    return (
+        "macOS blocked writing app.asar inside the Codex.app bundle. "
+        "Rollback stopped before deleting app/, so the current extracted app remains available. "
+        "Grant Terminal/Python App Management access, or move /Applications/Codex.app aside, copy it back, "
+        "then copy app.asar.bak to app.asar and re-sign. "
+        f"Resources: {paths.resources_dir}. Original error: {exc}"
+    )
+
+
 def rollback_files(paths: AppPaths) -> None:
+    restore_asar(paths)
     if paths.extracted_app_dir.exists():
         shutil.rmtree(paths.extracted_app_dir)
         print(f"[OK] Removed extracted app directory: {paths.extracted_app_dir}")
-    if paths.renamed_asar_path.exists():
-        if paths.asar_path.exists():
-            paths.asar_path.unlink()
-        paths.renamed_asar_path.rename(paths.asar_path)
-        print("[OK] Restored app.asar from app.asar1")
-    if paths.backup_asar_path.exists():
-        shutil.copy2(paths.backup_asar_path, paths.asar_path)
-        print("[OK] Restored app.asar from app.asar.bak")
 
 
 def print_doctor(paths: AppPaths) -> None:

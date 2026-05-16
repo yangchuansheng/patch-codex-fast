@@ -15,6 +15,7 @@ from .patterns import (
     FAST_HOOK_AUTH_PATTERNS,
     FAST_MODELS_PATTERNS,
 )
+from .zed_remote import patch_zed_remote_open
 
 
 SIDEBAR_GATE_RE = re.compile(r"([A-Z])\?\(0,\$\.jsx\)\(Sl,\{tooltipContent")
@@ -206,16 +207,19 @@ def patch_connector_gate(paths: AppPaths, report: PatchReport) -> None:
             report.add_file()
 
 
-def patch_js(paths: AppPaths) -> PatchReport:
+def patch_js(paths: AppPaths, *, include_fast_plugins: bool = True, include_zed_remote: bool = False) -> PatchReport:
     if not paths.assets_dir.exists():
         raise SystemExit(f"Assets directory not found after extraction: {paths.assets_dir}")
 
     report = PatchReport()
-    patch_fast_mode(paths, report)
-    patch_plugin_sidebar(paths, report)
-    patch_apikey_gate(paths, report)
-    patch_connector_gate(paths, report)
-    patch_chrome_plugin_preservation(paths, report)
+    if include_fast_plugins:
+        patch_fast_mode(paths, report)
+        patch_plugin_sidebar(paths, report)
+        patch_apikey_gate(paths, report)
+        patch_connector_gate(paths, report)
+        patch_chrome_plugin_preservation(paths, report)
+    if include_zed_remote:
+        patch_zed_remote_open(paths, report)
 
     if report.patch_actions == 0:
         raise SystemExit(

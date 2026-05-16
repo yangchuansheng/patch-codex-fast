@@ -2,7 +2,7 @@
 
 [![skills.sh](https://skills.sh/b/yangchuansheng/patch-codex-fast)](https://skills.sh/yangchuansheng/patch-codex-fast/patch-codex-fast)
 
-A Codex skill that patches the local Codex desktop app so **Fast/Speed mode** and **Plugins** are available when Codex is signed in with an **API key** instead of ChatGPT OAuth.
+A Codex skill that patches the local Codex desktop app so **Fast/Speed mode** and **Plugins** are available when Codex is signed in with an **API key** instead of ChatGPT OAuth. It can also optionally patch Codex remote SSH sessions so **Zed** appears as a remote-capable “Open With” target.
 
 The main artifact is the installable skill package at `skills/patch-codex-fast/SKILL.md`. Install the repository through `npx skills`, then ask Codex to run `patch-codex-fast`. Codex should handle the doctor check, patch execution, verification, and rollback guidance for you.
 
@@ -151,6 +151,8 @@ Direct script usage is mainly for debugging or for environments where you are no
 ```bash
 python3 scripts/patch_codex_fast.py doctor
 python3 scripts/patch_codex_fast.py patch
+python3 scripts/patch_codex_fast.py patch-zed-remote
+python3 scripts/patch_codex_fast.py zed-remote-status
 ```
 
 Rollback:
@@ -164,6 +166,8 @@ python3 scripts/patch_codex_fast.py rollback
 ```powershell
 python .\scripts\patch_codex_fast.py doctor
 python .\scripts\patch_codex_fast.py patch
+python .\scripts\patch_codex_fast.py patch-zed-remote
+python .\scripts\patch_codex_fast.py zed-remote-status
 ```
 
 Rollback:
@@ -179,6 +183,7 @@ python .\scripts\patch_codex_fast.py rollback
 | `--resources-dir` | all commands | Override the Codex resources directory. |
 | `--app-path` | all commands | Override the path passed to `@electron/fuses` and macOS `codesign`. |
 | `--no-stop` | `patch`, `rollback` | Do not stop the running Codex app before changing files. |
+| `--zed-remote` | `patch` | Apply the Zed remote-open patch together with the Fast/Plugins patch. |
 
 ## Default app paths
 
@@ -201,6 +206,14 @@ The patch changes local desktop bundle gates that currently depend on `authMetho
 | Plugins sidebar | Change the disabled ternary gate from `X?` to `0?`. | Keep the Plugins sidebar enabled. |
 | API key detector | Force API key plugin gate to return `false`. | Stop plugin code from treating API key mode as unsupported. |
 | Connector gate | Prefix connector-unavailable assignment with `false&&`. | Stop every connector from being marked unavailable. |
+
+Optional Zed remote-open patch:
+
+| Area | Local change | Purpose |
+| --- | --- | --- |
+| Zed open target | Add `supportsSsh: true` to Codex’s bundled Zed target. | Make Zed available in remote Codex sessions. |
+| Zed remote path builder | Convert Codex remote paths into Zed Remote Development URLs such as `ssh://user@host[:port]/path` when Codex exposes SSH config details, with `ssh://host/path` as fallback. | Open remote files/folders in local Zed through SSH. |
+| Local Zed behavior | Keep existing local `Zed` open behavior unchanged. | Avoid regressing local file opens. |
 
 It also changes Electron fuses required for the unpacked modified app to load:
 
@@ -242,11 +255,17 @@ If you must recover manually, close Codex and run the commands for your OS.
 
 ```bash
 cd /Applications/Codex.app/Contents/Resources
-rm -rf app
-[ -f app.asar1 ] && mv app.asar1 app.asar
 [ -f app.asar.bak ] && cp app.asar.bak app.asar
+[ ! -f app.asar ] && [ -f app.asar1 ] && cp app.asar1 app.asar
+rm -rf app
+npx @electron/fuses write --app /Applications/Codex.app OnlyLoadAppFromAsar=on
+npx @electron/fuses write --app /Applications/Codex.app EnableEmbeddedAsarIntegrityValidation=on
+npx @electron/fuses write --app /Applications/Codex.app EnableCookieEncryption=on
+npx @electron/fuses write --app /Applications/Codex.app GrantFileProtocolExtraPrivileges=off
 codesign --force --deep --sign - /Applications/Codex.app
 ```
+
+Restore `app.asar` before deleting `app/`. If macOS reports `Operation not permitted` while writing inside the bundle, do not delete `app/`; grant App Management access or move `/Applications/Codex.app` aside, copy it back, then restore `app.asar`.
 
 ### Windows
 
@@ -282,5 +301,15 @@ grep -rl "isExternalBrowserUseAvailable" app/webview/assets
 ```
 
 The current Chrome preservation patch maps the Dev runtime Chrome plugin name from `chrome-internal` to `chrome`, keeps the Chrome marketplace descriptor from being dropped by the external-browser feature gate, and prevents the renderer plugin list from hiding Chrome when `isExternalBrowserUseAvailable` is false.
+
+For Zed remote-open support, inspect the main process open-target bundle:
+
+```bash
+grep -rl "id:\`zed\`" app/.vite/build
+grep -rl "supportsSsh" app/.vite/build
+grep -rl "vscode-remote://" app/.vite/build
+```
+
+The current Zed patch uses Zed’s documented Remote Development URL form, `ssh://[user@]host[:port]/path`. It prefers Codex’s structured SSH config (`user`/`username`, `host`/`hostname`/`hostName`, `port`) instead of the display alias so Zed does not accidentally try the local macOS username for a remote host. Line and column support for remote URLs still needs UI verification on a real SSH target; installing the Zed CLI on `PATH` improves line/column refinement after the app is opened.
 
 Do not paste API keys, cookies, tokens, or proprietary bundle chunks into public issues.
